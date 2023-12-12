@@ -22,13 +22,13 @@ namespace QuantumCookie
 
         private float growthProbability = 0.5f;
 
-        public GameObject wallPrefab;
-        public GameObject floorPrefab;
-        public GameObject pillarPrefab;
-        public GameObject doorPrefab;
-        public GameObject windowPrefab;
-        public GameObject singleRoofPrefab;
-        public GameObject doubleRoofPrefab;
+        [HideInInspector] public GameObject wallPrefab;
+        [HideInInspector] public GameObject floorPrefab;
+        [HideInInspector] public GameObject pillarPrefab;
+        [HideInInspector] public GameObject doorPrefab;
+        [HideInInspector] public GameObject windowPrefab;
+        [HideInInspector] public GameObject singleRoofPrefab;
+        [HideInInspector] public GameObject doubleRoofPrefab;
 
         private int[,] floorGrid, roofGrid;
         private int floorCount;

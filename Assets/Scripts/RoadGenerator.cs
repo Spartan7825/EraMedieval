@@ -72,7 +72,7 @@ namespace QuantumCookie
 
         private bool showDebug = true;
         private bool showIndices = true;
-        private float debugSphereSize = 20f;
+        private float debugSphereSize = 5f;
 
         private List<Vector3> roadOrigins;
         private Vector2 mapBoundsMin, mapBoundsMax;
@@ -146,8 +146,9 @@ namespace QuantumCookie
                     //Generate next point in current road
 
                     Vertex nextVert = new Vertex(Vector3.zero, Vector3.zero);
-
+                    
                     bool canPropagate = GetNewPoint(current, out nextVert);
+                    canPropagate = canPropagate && Vector3.Dot(villageGen.GetTerrainNormalAt(nextVert.position), Vector3.up) > 0.7f;
 
                     nextVert.vertexID = current.vertexID + 1;
                     nextVert.branchDepth = current.branchDepth;
@@ -251,9 +252,7 @@ namespace QuantumCookie
             newPoint = new Vertex(currentPoint.position + newDir * stepSize, newDir);
 
             if (!isWithinBounds(newPoint)) return false;
-
-            if (villageGen.RoadIntersectsRiver(new Edge(currentPoint, newPoint), roadWidth)) return false;
-
+            
             for (int b = 0; b < vertices.Count; b++)
             {
                 if (b == currentPoint.branchID) continue;
@@ -281,9 +280,7 @@ namespace QuantumCookie
             newPoint = new Vertex(currentPoint.position + newDir * stepSize, newDir);
 
             if (!isWithinBounds(newPoint)) return false;
-
-            if (villageGen.RoadIntersectsRiver(new Edge(currentPoint, newPoint), roadWidth)) return false;
-
+            
             for (int b = 0; b < vertices.Count; b++)
             {
                 if (b == currentPoint.branchID) continue;
@@ -395,7 +392,7 @@ namespace QuantumCookie
                 foreach (Vertex vertex in list)
                 {
                     Gizmos.color = Color.white;
-                    Gizmos.DrawSphere(vertex.position, debugSphereSize);
+                    Gizmos.DrawSphere(vertex.position, 5);
                     Gizmos.color = Color.green;
                     Gizmos.DrawRay(vertex.position, vertex.normal * 5f);
                     Gizmos.color = Color.blue;

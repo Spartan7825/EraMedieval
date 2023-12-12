@@ -8,7 +8,7 @@ using Random = UnityEngine.Random;
 
 namespace QuantumCookie
 {
-    [System.Serializable]
+    [Serializable]
     public class GeneratorData
     {
         [Header("Generator")] public int seed = 293744;
@@ -28,8 +28,7 @@ namespace QuantumCookie
     [ExecuteInEditMode]
     public class VillageGenerator : MonoBehaviour
     {
-        public RiverGenerator riverGenerator;
-        public RoadGenerator roadGenerator;
+        public RoadGenerator roadGen;
      
         [Header("Map")] public Vector2 mapSize;
         
@@ -52,39 +51,37 @@ namespace QuantumCookie
         public GameObject doubleRoofPrefab;
         public GameObject singleRoofPrefab;
 
-        [Space] public GeneratorData riverGeneratorData;
         [FormerlySerializedAs("roadGeneratorDataa")] [Space] public GeneratorData roadGeneratorData;
         
         [Header("Debug")]
         public bool showDebug = false;
         public bool regenerate = false;
+        public bool random = false;
         public float debugSphereSize = 20f;
 
         private List<ProceduralHouse> houses;
         private void Update()
         {
             //noiseGen = new NoiseGenerator(seed, mapWidth, mapHeight, noiseScale, noiseFrequency);
+
+            if (random)
+            {
+                roadGeneratorData.seed = Random.Range(10000, 999999);
+                random = false;
+                regenerate = true;
+            }
             
             if (regenerate)
             {
                 regenerate = false;
-                riverGenerator.RegenerateRiver(this,
-                    riverGeneratorData.seed, mapSize, riverGeneratorData.stepSize, riverGeneratorData.width, riverGeneratorData.inertia,
-                    riverGeneratorData.curveAngleMax, riverGeneratorData.branchProbability, riverGeneratorData.branchAngleMax,
-                    riverGeneratorData.branchDepthMax, riverGeneratorData.branchProbabilityDecay, riverGeneratorData.weldThreshold, riverGeneratorData.showDebug
-                    );
-                roadGenerator.RegenerateRoad(this,
+                
+                roadGen.RegenerateRoad(this,
                     roadGeneratorData.seed, mapSize, roadGeneratorData.stepSize, roadGeneratorData.width, roadGeneratorData.inertia,
                     roadGeneratorData.curveAngleMax, roadGeneratorData.branchProbability, roadGeneratorData.branchAngleMax,
                     roadGeneratorData.branchDepthMax, roadGeneratorData.branchProbabilityDecay, roadGeneratorData.weldThreshold, roadGeneratorData.showDebug
                 );
                 RegenerateHouses();
             }
-        }
-
-        public bool RoadIntersectsRiver(Edge edge, float roadWidth)
-        {
-            return riverGenerator.IntersectsRiver(edge, roadWidth);
         }
         
         public void RegenerateHouses()
@@ -96,13 +93,7 @@ namespace QuantumCookie
 
             houses = new List<ProceduralHouse>();
             
-            List<List<Edge>> riverEdges = riverGenerator.Edges;
-            List<List<Edge>> roadEdges = roadGenerator.Edges;
-
-            for (int branch = 0; branch < riverEdges.Count; branch++)
-            {
-                GenerateAlongBranch(riverEdges[branch], branch, riverGeneratorData.width);
-            }
+            List<List<Edge>> roadEdges = roadGen.Edges;
             
             for (int branch = 0; branch < roadEdges.Count; branch++)
             {
@@ -128,11 +119,9 @@ namespace QuantumCookie
                 Vector3 point = origin + new Vector3(rndCircle.x, 0f, rndCircle.y);
 
                 if (IsPointOutOfBounds(point)) continue;
-                
-                point = ProjectPointToTerrain(point);
 
-                Vector3 upVector = GetTerrainNormalAt(point);
-                Vector3 awayFrom = (point - ProjectPointToTerrain(origin)).normalized;
+                Vector3 upVector = GetTerrainNormalAt(ProjectPointToTerrain(point));
+                Vector3 awayFrom = (point - origin).normalized;
                 
                 CreateHouseAt(point, awayFrom, houses.Count, upVector, true);
             }
@@ -158,7 +147,7 @@ namespace QuantumCookie
         private void CreateHouseAt(Vector3 point, Vector3 awayFromPath, int id, Vector3 upVector, bool followRoads)
         {
             //Too steep
-            if(Vector3.Dot(upVector, Vector3.up) < 0.7f) return;
+            if(Vector3.Dot(upVector, Vector3.up) < 0.9f) return;
             
             int houseLength = Random.Range(1, length);
             int houseBreadth = Random.Range(1, breadth);
@@ -178,11 +167,15 @@ namespace QuantumCookie
 
             houseComp.Generate(Random.Range(1000000, 9999999), length, breadth, tileSize, growthProbability);
             
-            if(followRoads)
+            //if(followRoads)
             {
-                newHouse.transform.SetPositionAndRotation(point,
+                newHouse.transform.SetPositionAndRotation(ProjectPointToTerrain(point),
                     Quaternion.AngleAxis(-90, upVector) * Quaternion.LookRotation(awayFromPath, upVector));
             }
+            /*else
+            {
+                newHouse.transform.SetPositionAndRotation(point, Quaternion.LookRotation(awayFromPath, upVector));
+            }*/
 
             if (DoesHouseOverlapOtherHouse(newHouse, houseComp))
             {
@@ -201,9 +194,8 @@ namespace QuantumCookie
             Vector3 upVector = house.transform.up;
 
             int roadLayer = LayerMask.NameToLayer("Road");
-            int riverLayer = LayerMask.NameToLayer("River");
             int houseLayer = LayerMask.NameToLayer("House");
-            int layers = roadLayer | riverLayer | houseLayer;
+            int layers = roadLayer | houseLayer;
             
             for (int i = 0; i <= houseComp.Length; i++)
             {
@@ -217,15 +209,16 @@ namespace QuantumCookie
                     
                     for(int k = 0; k < col.Length; k++)
                     {
-                        ProceduralHouse other = col[0].GetComponentInParent<ProceduralHouse>();
-                        if (other.Equals(houseComp)) continue;
+                        ProceduralHouse other = col[k].GetComponentInParent<ProceduralHouse>();
+                        if(other == null) Debug.Log("Unavailable");
+                        else if (other.Equals(houseComp)) continue;
                         
                         //Debug.LogFormat("{0} at {1} overlaps with {2} at {3}", house.name, house.transform.position, other.gameObject.name, other.transform.position);
                         return true;
                     }
 
                     RaycastHit hit;
-                    if (Physics.Raycast(pos + upVector * tileSize, -house.transform.up, out hit, 50f, (1 << roadLayer) | (1 << riverLayer)))
+                    if (Physics.Raycast(pos + upVector * tileSize, -house.transform.up, out hit, 50f, (1 << roadLayer)))
                     {
                         //Debug.LogFormat("{0} hit a {1}", house.name, hit.transform.name);
                         return true;
