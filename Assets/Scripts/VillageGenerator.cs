@@ -166,13 +166,18 @@ namespace QuantumCookie
             houseComp.singleRoofPrefab = singleRoofPrefab;
 
             houseComp.Generate(Random.Range(1000000, 9999999), length, breadth, tileSize, growthProbability);
-
-            List<Vector3> trackPoints = houseComp.GetTrackingPoints();
             
-            newHouse.transform.SetPositionAndRotation(ProjectPointToTerrain(point),
-                Quaternion.AngleAxis(-90, upVector) * Quaternion.LookRotation(awayFromPath, upVector));
+            //if(followRoads)
+            {
+                newHouse.transform.SetPositionAndRotation(ProjectPointToTerrain(point),
+                    Quaternion.AngleAxis(-90, upVector) * Quaternion.LookRotation(awayFromPath, upVector));
+            }
+            /*else
+            {
+                newHouse.transform.SetPositionAndRotation(point, Quaternion.LookRotation(awayFromPath, upVector));
+            }*/
 
-            if (DoesHouseOverlapOtherHouse(newHouse, houseComp) || IsOnVeryBumpyGround(trackPoints))
+            if (DoesHouseOverlapOtherHouse(newHouse, houseComp))
             {
                 DestroyImmediate(newHouse);
                 return;
@@ -181,27 +186,6 @@ namespace QuantumCookie
             houses.Add(houseComp);
         }
 
-        private bool IsOnVeryBumpyGround(List<Vector3> trackPoints)
-        {
-            float minDistToGround = float.MaxValue;
-            float maxDistToGround = float.MinValue;
-
-            for (int i = 0; i < trackPoints.Count; i++)
-            {
-                Vector3 point = trackPoints[i];
-                Vector3 groundPoint = ProjectPointToTerrain(point);
-
-                float dist = Vector3.SqrMagnitude(point - groundPoint);
-                if (dist < minDistToGround) minDistToGround = dist;
-                if (dist > maxDistToGround) maxDistToGround = dist;
-            }
-
-            if (Math.Abs(minDistToGround - float.MaxValue) < 0.0001f || Math.Abs(maxDistToGround - float.MinValue) < 0.0001f) return true;
-
-            if (maxDistToGround - minDistToGround > 1f) return true;
-            return false;
-        }
-        
         private bool DoesHouseOverlapOtherHouse(GameObject house, ProceduralHouse houseComp)
         {
             Vector3 oldPos = house.transform.position;

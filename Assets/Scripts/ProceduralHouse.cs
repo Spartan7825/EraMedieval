@@ -332,25 +332,6 @@ namespace QuantumCookie
             }
         }
 
-        public List<Vector3> GetTrackingPoints()
-        {
-            List<Vector3> points = new List<Vector3>();
-            
-            for (int i = 0; i <= length; i++)
-            {
-                for (int j = 0; j <= breadth; j++)
-                {
-                    Vector3 pos = transform.position
-                                  + Vector3.right * length * tileSize * i
-                                  + Vector3.forward * breadth * tileSize * j;
-
-                    points.Add(pos);
-                }
-            }
-
-            return points;
-        }
-        
         private int GetCell(int i, int j) => (i < 0 || i >= length || j < 0 || j >= breadth) ? -1 : floorGrid[i, j];
         private bool IsBlankOrOutOfBounds(int cell) => cell == -1 || cell == BLANK;
 

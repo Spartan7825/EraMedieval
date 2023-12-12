@@ -1,3 +1,5 @@
+using System;
+using System.Collections;
 using System.Collections.Generic;
 using UnityEngine;
 using UnityEditor;
@@ -114,11 +116,9 @@ namespace QuantumCookie
             List<Vertex> queue = new List<Vertex>();
             roadOrigins = new List<Vector3>();
 
-            for (int i = 0; i < 5; i++)
+            for (int i = 0; i < transform.childCount; i++)
             {
-                //roadOrigins.Add(transform.GetChild(i).position);
-                Vector2 randOffset = new Vector2(mapSize.x * Random.value, mapSize.y * Random.value);
-                roadOrigins.Add(transform.position + new Vector3(randOffset.x, 0, randOffset.y));
+                roadOrigins.Add(transform.GetChild(i).position);
 
                 Vector3 roadDirection = new Vector3(Random.Range(-1, 1), 0, Random.Range(-1, 1)).normalized;
                 if (roadDirection == Vector3.zero) roadDirection = new Vector3(1, 0, 1).normalized;
